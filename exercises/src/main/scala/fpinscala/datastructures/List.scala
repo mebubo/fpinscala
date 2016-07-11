@@ -78,9 +78,30 @@ object List { // `List` companion object. Contains functions for creating and wo
     case Cons(h, t) => Cons(h, init(t))
   }
 
-  def length[A](l: List[A]): Int = sys.error("todo")
+  def length[A](l: List[A]): Int = foldRight(l, 0)((_, acc) => 1 + acc)
 
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = sys.error("todo")
+  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
+    case Nil => z
+    case Cons(h, t) => foldLeft(t, f(z, h))(f)
+  }
+
+  def sum3(ns: List[Int]): Int = foldLeft(ns, 0)(_ + _)
+
+  def product3(ns: List [Double]): Double = foldLeft(ns, 1.0)(_ * _)
+
+  def length3[A](xs: List[A]): Int = foldLeft(xs, 0)((acc, _) => acc + 1)
+
+  def reverse[A](xs: List[A]): List[A] =
+    foldLeft(xs, Nil: List[A])((acc, curr) => Cons(curr, acc))
+
+  def foldRightViaFoldLeft[A, B](xs: List[A], z: B)(f: (A, B) => B): B =
+    foldLeft(xs, (b: B) => b)((accf, a) => (b: B) => accf(f(a, b)))(z)
+
+  def foldLeftViaFoldRight[A, B](xs: List[A], z: B)(f: (B, A) => B): B =
+    foldRight(xs, (b: B) => b)((a, accf) => (b: B) => accf(f(b, a)))(z)
+
+  def append2[A](a1: List[A], a2: List[A]): List[A] =
+    foldRight(a1, a2)(Cons(_, _))
 
   def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
 }
@@ -88,5 +109,7 @@ object List { // `List` companion object. Contains functions for creating and wo
 object Main {
   def main(args: Array[String]): Unit = {
     println(List.x)
+    println(List.reverse(List(1, 2, 3)))
+    println(List.append2(List(1, 2), List(10, 20)))
   }
 }
