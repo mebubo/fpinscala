@@ -105,7 +105,35 @@ object List { // `List` companion object. Contains functions for creating and wo
 
   def concat[A](xss: List[List[A]]): List[A] = foldRight(xss, Nil: List[A])(append)
 
-  def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
+  def addOneToEach(xs: List[Int]): List[Int] =
+    foldRight(xs, Nil: List[Int])((x, acc) => Cons(x + 1, acc))
+
+  def eachToString(xs: List[Double]): List[String] =
+    foldRight(xs, Nil: List[String])((x, acc) => Cons(x.toString(), acc))
+
+  def map[A,B](l: List[A])(f: A => B): List[B] =
+    foldRight(l, Nil: List[B])((x, acc) => Cons(f(x), acc))
+
+  def filter[A](xs: List[A])(f: A => Boolean): List[A] =
+    foldRight(xs, Nil: List[A])((x, acc) => if (f(x)) Cons(x, acc) else acc)
+
+  def flatMap[A](xs: List[A])(f: A => List[A]): List[A] = concat(map(xs)(f))
+
+  def filterViaFlatMap[A](xs: List[A])(f: A => Boolean) = flatMap(xs)(x => if (f(x)) List(x) else Nil)
+
+  def zipAdd(xs: List[Int], ys: List[Int]): List[Int] = xs match {
+    case Nil => Nil
+    case Cons(x, xs1) => ys match {
+      case Nil => Nil
+      case Cons(y, ys1) => Cons(x + y, zipAdd(xs1, ys1))
+    }
+  }
+
+  def zipWith[A, B, C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C] = (xs, ys) match {
+    case (Nil, _) => Nil
+    case (_, Nil) => Nil
+    case (Cons(x, xs1), Cons(y, ys1)) => Cons(f(x, y), zipWith(xs1, ys1)(f))
+  }
 }
 
 object Main {
@@ -114,5 +142,7 @@ object Main {
     println(List.reverse(List(1, 2, 3)))
     println(List.append2(List(1, 2), List(10, 20)))
     println(List.concat(List(List(1, 2), List(10, 20))))
+    println(List.addOneToEach(List(1, 2, 3)))
+    println(List.filterViaFlatMap(List(1, 2, 3, 4, 5))(_ % 2 == 0))
   }
 }
