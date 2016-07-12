@@ -1,10 +1,10 @@
-/* 
+/*
 The discussion about `map` also applies here.
 */
-def filter[A](l: List[A])(f: A => Boolean): List[A] = 
+def filter[A](l: List[A])(f: A => Boolean): List[A] =
   foldRight(l, Nil:List[A])((h,t) => if (f(h)) Cons(h,t) else t)
 
-def filter_1[A](l: List[A])(f: A => Boolean): List[A] = 
+def filter_1[A](l: List[A])(f: A => Boolean): List[A] =
   foldRightViaFoldLeft(l, Nil:List[A])((h,t) => if (f(h)) Cons(h,t) else t)
 
 def filter_2[A](l: List[A])(f: A => Boolean): List[A] = {
