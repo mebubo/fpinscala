@@ -103,6 +103,8 @@ object List { // `List` companion object. Contains functions for creating and wo
   def append2[A](a1: List[A], a2: List[A]): List[A] =
     foldRight(a1, a2)(Cons(_, _))
 
+  def concat[A](xss: List[List[A]]): List[A] = foldRight(xss, Nil: List[A])(append)
+
   def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
 }
 
@@ -111,5 +113,6 @@ object Main {
     println(List.x)
     println(List.reverse(List(1, 2, 3)))
     println(List.append2(List(1, 2), List(10, 20)))
+    println(List.concat(List(List(1, 2), List(10, 20))))
   }
 }
