@@ -134,6 +134,15 @@ object List { // `List` companion object. Contains functions for creating and wo
     case (_, Nil) => Nil
     case (Cons(x, xs1), Cons(y, ys1)) => Cons(f(x, y), zipWith(xs1, ys1)(f))
   }
+
+  def all(xs: List[Boolean]): Boolean = foldLeft(xs, true)(_ && _)
+
+  def any(xs: List[Boolean]): Boolean = foldLeft(xs, false)(_ || _)
+
+  def hasSubsequence[A](a: List[A], b: List[A]): Boolean = a match {
+    case Nil => b == Nil
+    case Cons(h, t) => all(zipWith(a, b)(_ == _)) || hasSubsequence(t, b)
+  }
 }
 
 object Main {
@@ -144,5 +153,10 @@ object Main {
     println(List.concat(List(List(1, 2), List(10, 20))))
     println(List.addOneToEach(List(1, 2, 3)))
     println(List.filterViaFlatMap(List(1, 2, 3, 4, 5))(_ % 2 == 0))
+    println(List.hasSubsequence(List(1, 2, 3, 4), List(1, 2)))
+    println(List.hasSubsequence(List(1, 2, 3, 4), List(2, 3)))
+    println(List.hasSubsequence(List(1, 2, 3, 4), List(4)))
+    println(List.hasSubsequence(List(1, 2, 3, 4), List(5)))
+    println(List.hasSubsequence(List(1, 2, 3, 4), List(1,3)))
   }
 }
