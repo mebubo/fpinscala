@@ -17,6 +17,31 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
+
+  def toList: List[A] = this match {
+    case Empty => Nil
+    case Cons(h, t) => h() :: t().toList
+  }
+
+  def toListTailRec: List[A] = {
+    def go(s: Stream[A], acc: List[A]): List[A] = s match {
+      case Cons(h, t) => go(t(), h() :: acc)
+      case _ => acc
+    }
+    go(this, Nil).reverse
+  }
+
+  def toListTailRecViaBuffer: List[A] = {
+    val buf = new collection.mutable.ListBuffer[A]
+    def go(s: Stream[A]): List[A] = s match {
+      case Cons(h, t) =>
+        buf += h()
+        go(t())
+      case _ => buf.toList
+    }
+    go(this)
+  }
+
   def take(n: Int): Stream[A] = sys.error("todo")
 
   def drop(n: Int): Stream[A] = sys.error("todo")
