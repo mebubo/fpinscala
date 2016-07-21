@@ -42,18 +42,45 @@ trait Stream[+A] {
     go(this)
   }
 
-  def take(n: Int): Stream[A] = sys.error("todo")
+  def take(n: Int): Stream[A] = this match {
+    case Cons(h, t) if n > 1 => cons(h(), t().take(n-1))
+    case Cons(h, t) if n == 1 => cons(h(), empty)
+    case _ => empty
+  }
 
-  def drop(n: Int): Stream[A] = sys.error("todo")
+  def drop(n: Int): Stream[A] = this match {
+    case Cons(h, t) if n > 0 => t().drop(n - 1)
+    case _ => this
+  }
 
-  def takeWhile(p: A => Boolean): Stream[A] = sys.error("todo")
+  def takeWhile(p: A => Boolean): Stream[A] = this match {
+    case Cons(h, t) if p(h()) => cons(h(), t() takeWhile p)
+    case _ => empty
+  }
 
-  def forAll(p: A => Boolean): Boolean = sys.error("todo")
+  def takeWhileViaFold(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((h, t) => if (p(h)) cons(h, t) else empty)
 
-  def headOption: Option[A] = sys.error("todo")
+  def forAll(p: A => Boolean): Boolean =
+    foldRight(true)((a, b) => p(a) && b)
+
+  def headOption: Option[A] =
+    foldRight(None: Option[A])((h, _) => Some(h))
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+
+  def map[B](f: A => B): Stream[B] =
+    foldRight(empty[B])((h, t) => cons(f(h), t))
+
+  def filter(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((h, t) => if (p(h)) cons(h, t) else t)
+
+  def append[B>:A](other: => Stream[B]): Stream[B] =
+    foldRight(other)((h, t) => cons(h, t))
+
+  def flatMap[B>:A](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((h, t) => f(h).append(t))
 
   def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
 }
@@ -77,4 +104,17 @@ object Stream {
   def from(n: Int): Stream[Int] = sys.error("todo")
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = sys.error("todo")
+
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println(Stream(1, 2).headOption)
+    println(Stream(1).headOption)
+    println(empty.headOption)
+    val stream = Stream(1, 2, 3, 4, 5)
+    println(stream.takeWhile(_ < 4).toList)
+    println(stream.filter(_ % 2 == 0).toList)
+
+  }
 }
