@@ -99,7 +99,17 @@ trait Stream[+A] {
       case _ => None
     }
 
-  def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
+  def startsWith[B](s: Stream[B]): Boolean = zipWithAll(this, s)((opta, optb) => (opta, optb) match {
+    case (Some(a), Some(b)) => a == b
+    case (Some(_), None) => true
+    case _ => false
+  }).forAll(x => x)
+
+  def startsWith2[B](s: Stream[B]): Boolean = zipAll(this, s)
+    .takeWhile(_._2.isDefined)
+    .forAll {
+      case (a, b) => a == b
+    }
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -191,5 +201,18 @@ object Main {
     println(Stream().takeViaUnfold(4).toList)
     println(Stream(1, 2).takeViaUnfold(0).toList)
     println(Stream().takeViaUnfold(0).toList)
+
+    println(Stream(1,2,3).startsWith2(Stream(1,2,3)))
+    println(Stream(1,2,3).startsWith2(Stream(1,2)))
+    println(Stream(1,2,3).startsWith2(Stream(1)))
+    println(Stream(1,2,3).startsWith2(Stream()))
+
+    println(Stream(1,2).startsWith2(Stream(1, 2, 3)))
+    println(Stream(1).startsWith2(Stream(1, 2, 3)))
+    println(Stream().startsWith2(Stream(1, 2, 3)))
+
+    println(Stream(1).startsWith2(Stream(1)))
+    println(Stream().startsWith2(Stream()))
+
   }
 }
