@@ -30,7 +30,14 @@ object RNG {
       (f(a), rng2)
     }
 
-  def nonNegativeInt(rng: RNG): (Int, RNG) = ???
+  def nonNegativeInt(rng: RNG): (Int, RNG) = {
+    var result = -1
+    var nextRng = rng
+    do {
+      (result, nextRng) = rng.nextInt
+    } while (result < 0)
+    (result, nextRng)
+  }
 
   def double(rng: RNG): (Double, RNG) = ???
 
