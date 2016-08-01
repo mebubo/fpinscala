@@ -122,6 +122,19 @@ trait Stream[+A] {
       case Empty => None
       case s => Some((s, s drop 1))
     } append Stream(empty)
+
+  def hasSubsequence[A](s: Stream[A]): Boolean =
+    tails exists (_ startsWith s)
+
+  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] = this.foldRight(Stream(z))((a, b) => {
+    b match {
+      case Cons(x, xs) => {
+        val y = f(a, x())
+        cons(y, b)
+      }
+    }
+  })
+
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -155,12 +168,18 @@ object Stream {
     go(0, 1)
   }
 
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = {
+  def unfold0[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = {
     def go(s: S): Stream[A] = {
       f(s).map({case (a, s2) => cons(a, go(s2))}).getOrElse(empty)
     }
     go(z)
   }
+
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] =
+    f(z) match {
+      case Some((a, s)) => cons(a, unfold(s)(f))
+      case None => empty
+    }
 
   val onesViaUnfold: Stream[Int] = unfold(1)(s => Some((s, s)))
 
@@ -225,6 +244,8 @@ object Main {
 
     println(Stream(1).startsWith2(Stream(1)))
     println(Stream().startsWith2(Stream()))
+
+    println(Stream(1, 2, 3).scanRight(0)(_ + _).toList)
 
   }
 }
