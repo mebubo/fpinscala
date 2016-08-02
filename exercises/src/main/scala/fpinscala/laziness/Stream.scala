@@ -126,13 +126,11 @@ trait Stream[+A] {
   def hasSubsequence[A](s: Stream[A]): Boolean =
     tails exists (_ startsWith s)
 
-  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] = this.foldRight(Stream(z))((a, b) => {
-    b match {
-      case Cons(x, xs) => {
-        val y = f(a, x())
-        cons(y, b)
+  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] =
+    this.foldRight(Stream(z))((a, b) => {
+      b match {
+        case Cons(x, xs) => cons(f(a, x()), b)
       }
-    }
   })
 
 }
@@ -246,6 +244,8 @@ object Main {
     println(Stream().startsWith2(Stream()))
 
     println(Stream(1, 2, 3).scanRight(0)(_ + _).toList)
+    println(Stream(1).scanRight(0)(_ + _).toList)
+    println(empty[Int].scanRight(0)(_ + _).toList)
 
   }
 }
