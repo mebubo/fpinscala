@@ -34,7 +34,9 @@ object RNG {
     var result = -1
     var nextRng = rng
     do {
-      (result, nextRng) = rng.nextInt
+      val p = rng.nextInt
+      result = p._1
+      nextRng = p._2
     } while (result < 0)
     (result, nextRng)
   }
@@ -44,13 +46,28 @@ object RNG {
     (if (i < 0) -(i + 1) else i, nextRng)
   }
 
-  def double(rng: RNG): (Double, RNG) = ???
+  def double(rng: RNG): (Double, RNG) = {
+    val (i, nextRng) = nonNegativeInt(rng)
+    (i/(Int.MaxValue.toDouble + 1), nextRng)
+  }
 
-  def intDouble(rng: RNG): ((Int,Double), RNG) = ???
+  def intDouble(rng: RNG): ((Int,Double), RNG) = {
+    val (i, n1) = rng.nextInt
+    val (d, n2) = double(n1)
+    ((i, d), n2)
+  }
 
-  def doubleInt(rng: RNG): ((Double,Int), RNG) = ???
+  def doubleInt(rng: RNG): ((Double,Int), RNG) = {
+    val ((i, d), nextRng) = intDouble(rng)
+    ((d, i), nextRng)
+  }
 
-  def double3(rng: RNG): ((Double,Double,Double), RNG) = ???
+  def double3(rng: RNG): ((Double,Double,Double), RNG) = {
+    val (d1, r1) = double(rng)
+    val (d2, r2) = double(r1)
+    val (d3, r3) = double(r2)
+    ((d1, d2, d3), r3)
+  }
 
   def ints(count: Int)(rng: RNG): (List[Int], RNG) = ???
 
