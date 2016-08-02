@@ -90,7 +90,14 @@ object RNG {
     go(count, rng, List())
   }
 
-  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
+  val doubleViaMap: Rand[Double] = map(nonNegativeInt)(_ / (Int.MaxValue.toDouble + 1))
+
+  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+    rng => {
+      val (a, ra2) = ra(rng)
+      val (b, rb2) = rb(ra2)
+      (f(a, b), rb2)
+    }
 
   def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = ???
 
