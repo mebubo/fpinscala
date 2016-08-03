@@ -99,7 +99,11 @@ object RNG {
       (f(a, b), rb2)
     }
 
-  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = ???
+  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
+    fs.foldRight(unit(List[A]()))((curr, acc) => map2(curr, acc)(_ :: _))
+
+  def sequenceLeft[A](fs: List[Rand[A]]): Rand[List[A]] =
+    fs.foldLeft(unit(List[A]()))((acc, curr) => map2(curr, acc)(_ :: _))
 
   def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
 }
@@ -122,4 +126,11 @@ case class Machine(locked: Boolean, candies: Int, coins: Int)
 object State {
   type Rand[A] = State[RNG, A]
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
+}
+
+object Main {
+  def main(args: Array[String]): Unit = {
+    println(RNG.sequence(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
+    println(RNG.sequenceLeft(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
+  }
 }
