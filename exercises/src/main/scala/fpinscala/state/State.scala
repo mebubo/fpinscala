@@ -154,18 +154,51 @@ case object Turn extends Input
 case class Machine(locked: Boolean, candies: Int, coins: Int)
 
 object State {
+
   type Rand[A] = State[RNG, A]
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
 
   def unit[S, A](a: A): State[S, A] = State(s => (a, s))
 
   def sequence[S, A](sas: List[State[S, A]]): State[S, List[A]] =
     sas.foldRight(State.unit[S, List[A]](List())){(sa, sla) => sa.map2(sla)(_ :: _)}
+
+  def modify[S](f: S => S): State[S, Unit] = for {
+    s <- get
+    _ <- set(f(s))
+  } yield ()
+
+  def get[S]: State[S, S] = State(s => (s, s))
+
+  def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+}
+
+object Candy {
+
+  def machineStep(i: Input, m: Machine): Machine = (i, m) match {
+    case (Coin, Machine(true, candies, coins)) if candies > 0 => Machine(false, candies, coins + 1)
+    case (Turn, Machine(false, candies, coins)) => Machine(true, candies -1, coins)
+    case _ => m
+  }
+
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for {
+    _ <- State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input, m))))
+    state <- State.get
+  } yield (state.coins, state.candies)
+
+  def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {
+    val state: State[Machine, List[Unit]] = State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input, m))))
+    state.flatMap(_ => State.get.map(state => (state.coins, state.candies)));
+  }
+
 }
 
 object Main {
   def main(args: Array[String]): Unit = {
     println(RNG.sequence(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
     println(RNG.sequenceLeft(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
+
+    val m = Machine(true, 10, 2);
+    val inputs = List(Coin, Turn, Coin, Turn, Turn, Coin);
+    println(Candy.simulateMachine2(inputs).run(m))
   }
 }
