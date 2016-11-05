@@ -35,7 +35,7 @@ function unit<A>(a: A): Rand<A> {
 
 const int: Rand<number> = (rng: RNG) => rng.nextInt();
 
-function map<A, B>(s: Rand<A>, f: (A) => B): Rand<B> {
+function map<A, B>(s: Rand<A>, f: (a: A) => B): Rand<B> {
     return rng => {
         const [a, rng1] = s(rng);
         const b: B = f(a);
@@ -43,7 +43,7 @@ function map<A, B>(s: Rand<A>, f: (A) => B): Rand<B> {
     }
 }
 
-const map2 = <A, B, C>(ra: Rand<A>, rb: Rand<B>, f: (A, B) => C): Rand<C> => {
+const map2 = <A, B, C>(ra: Rand<A>, rb: Rand<B>, f: (a: A, b: B) => C): Rand<C> => {
     return (rng: RNG) => {
         const [a, rng1] = ra(rng);
         const [b, rng2] = rb(rng1);
@@ -67,7 +67,7 @@ const mapViaFlatMap = <A, B>(s: Rand<A>, f: (a: A) => B): Rand<B> => {
     return flatMap(s, a => unit(f(a)));
 };
 
-const map2ViaFlatMap = <A, B, C>(ra: Rand<A>, rb: Rand<B>, f: (A, B) => C): Rand<C> => {
+const map2ViaFlatMap = <A, B, C>(ra: Rand<A>, rb: Rand<B>, f: (a: A, b: B) => C): Rand<C> => {
     return flatMap(ra, a => mapViaFlatMap(rb, (b: B) => f(a, b)));
 };
 
