@@ -19,7 +19,7 @@ object RNG {
 
   type Rand[+A] = RNG => (A, RNG)
 
-  val int: Rand[Int] = _.nextInt
+  val int: Rand[Int] = rng => rng.nextInt
 
   def unit[A](a: A): Rand[A] =
     rng => (a, rng)
@@ -174,20 +174,21 @@ object State {
 
 object Candy {
 
-  def machineStep(i: Input, m: Machine): Machine = (i, m) match {
+  def machineStep(i: Input)(m: Machine): Machine = (i, m) match {
     case (Coin, Machine(true, candies, coins)) if candies > 0 => Machine(false, candies, coins + 1)
     case (Turn, Machine(false, candies, coins)) => Machine(true, candies -1, coins)
     case _ => m
   }
 
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for {
-    _ <- State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input, m))))
+//    _ <- State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input, m))))
+    _ <- State.sequence(inputs.map(State.modify[Machine] _ compose machineStep))
     state <- State.get
   } yield (state.coins, state.candies)
 
   def simulateMachine2(inputs: List[Input]): State[Machine, (Int, Int)] = {
-    val state: State[Machine, List[Unit]] = State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input, m))))
-    state.flatMap(_ => State.get.map(state => (state.coins, state.candies)));
+    val state: State[Machine, List[Unit]] = State.sequence(inputs.map(input => State.modify[Machine](m => machineStep(input)(m))))
+    state.flatMap(_ => State.get.map(state => (state.coins, state.candies)))
   }
 
 }
@@ -197,8 +198,8 @@ object Main {
     println(RNG.sequence(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
     println(RNG.sequenceLeft(List(RNG.unit(1), RNG.unit(2), RNG.unit(3)))(RNG.Simple(0))._1)
 
-    val m = Machine(true, 10, 2);
-    val inputs = List(Coin, Turn, Coin, Turn, Turn, Coin);
-    println(Candy.simulateMachine2(inputs).run(m))
+    val m = Machine(locked = true, 10, 2)
+    val inputs = List(Coin, Turn, Coin, Turn, Turn, Coin)
+    println(Candy.simulateMachine(inputs).run(m))
   }
 }
