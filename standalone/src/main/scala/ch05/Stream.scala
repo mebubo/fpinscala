@@ -126,6 +126,10 @@ sealed trait Stream[+A] {
     case (Empty, Cons(h2, t2)) => Some(((None, Some(h2())), (Empty, t2())))
     case _ => None
   }
+
+  def startsWith[A](s: Stream[A]): Boolean =
+    this.zipAll(s).takeWhile { case (_, s2) => !s2.isEmpty }.forAll { case (x, y) => x == y }
+
 }
 case object Empty extends Stream[Nothing]
 case class Cons[A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -175,5 +179,10 @@ object Main {
     println(Stream.fibs.take(10).map2(_ + 1).toList)
     println(Stream.fibs.take3(10).map2(_ + 1).toList)
     println(Stream.fibs.take3(5).zipAll(Stream.ones.take(2)).toList)
+    println(Stream(1, 2, 3, 4).startsWith(Stream(1, 2)))
+    println(Stream(1, 2, 3, 4).startsWith(Stream(0, 1, 2)))
+    println(Stream(1, 2).startsWith(Stream(1, 2)))
+    println(Stream(1).startsWith(Stream(1, 2)))
+    println(Stream().startsWith(Stream()))
   }
 }
