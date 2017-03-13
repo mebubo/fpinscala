@@ -130,6 +130,21 @@ sealed trait Stream[+A] {
   def startsWith[A](s: Stream[A]): Boolean =
     this.zipAll(s).takeWhile { case (_, s2) => !s2.isEmpty }.forAll { case (x, y) => x == y }
 
+  def tails: Stream[Stream[A]] = Stream.unfold(this) {
+    case Empty => None
+    case s => Some((s, s drop 1))
+  } append Stream(Stream.empty)
+
+  def hasSubsequence[A](s: Stream[A]): Boolean =
+    this.tails.exists(t => t.startsWith(s))
+
+  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] =
+    this.foldRight((z, Stream(z)))((a, bs) => {
+      lazy val bsl = bs
+      val b = f(a, bsl._1)
+      (b, Stream.cons(b, bsl._2))
+    })._2
+
 }
 case object Empty extends Stream[Nothing]
 case class Cons[A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -184,5 +199,6 @@ object Main {
     println(Stream(1, 2).startsWith(Stream(1, 2)))
     println(Stream(1).startsWith(Stream(1, 2)))
     println(Stream().startsWith(Stream()))
+    println(Stream(1,2,3).scanRight(0)(_ + _).toList)
   }
 }
