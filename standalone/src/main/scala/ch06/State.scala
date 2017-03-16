@@ -126,11 +126,52 @@ object State {
   type Rand[A] = State[RNG, A]
 
   def unit[S, A](a: A): State[S, A] = State(s => (a, s))
+
+  def sequence[S, A](sas: List[State[S, A]]): State[S, List[A]] =
+    sas.reverse.foldLeft(unit[S, List[A]](List()))((acc, f) => f.map2(acc)( _ :: _  ))
+
+  def get[S]: State[S, S] = State(s => (s, s))
+  def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+
+  def modify[S](f: S => S): State[S, Unit] = for {
+    s <- get
+    _ <- set(f(s))
+  } yield ()
+}
+
+sealed trait Input
+case object Coin extends Input
+case object Turn extends Input
+
+case class Machine(locked: Boolean, candies: Int, coins: Int)
+
+object CandyMachine {
+
+  def step(i: Input, m: Machine): Machine =
+    (i, m) match {
+      case (Coin, Machine(true, ca, co)) if ca > 0 => Machine(false, ca, co + 1)
+      case (Turn, Machine(false, ca, co)) => Machine(true, ca - 1, co)
+      case _ => m
+    }
+
+  def step2(i: Input): State[Machine, Unit] = for {
+    s <- State.get
+    _ <- State.set(step(i, s))
+  } yield ()
+
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = {
+    val is: List[State[Machine, Unit]] = inputs.map(step2)
+    for {
+      _ <- State.sequence(is)
+      s <- State.get
+    } yield (s.coins, s.candies)
+  }
 }
 
 object Main {
   def main(args: Array[String]) = {
-    printf(RNG.nonNegativeLessThan(6)(SimpleRNG(1)).toString)
+    println(RNG.nonNegativeLessThan(6)(SimpleRNG(1)).toString)
+    println(CandyMachine.simulateMachine(List(Coin, Turn, Coin, Turn)).run(Machine(true, 10, 0)).toString)
   }
 }
 
