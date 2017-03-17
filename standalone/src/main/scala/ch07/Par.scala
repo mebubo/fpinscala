@@ -64,4 +64,11 @@ object Par {
       map2(sequenceBalanced(l), sequenceBalanced(r))(_ ++ _)
     }
   }
+
+  def parFilter[A](ps: List[A])(p: A => Boolean): Par[List[A]] = {
+    val lpl: List[Par[List[A]]] = ps.map(asyncF(a => if (p(a)) List(a) else List()))
+    val pll: Par[List[List[A]]] = sequence(lpl)
+    map(pll)(_.flatten)
+  }
+
 }
