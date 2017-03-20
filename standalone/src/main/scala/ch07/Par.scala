@@ -71,4 +71,42 @@ object Par {
     map(pll)(_.flatten)
   }
 
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    es => {
+      val ind = run(es)(n).get
+      run(es)(choices(ind))
+    }
+
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    choiceN(map(cond)(if(_) 0 else 1))(List(t, f))
+
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
+    es => {
+      val k = run(es)(key).get
+      run(es)(choices(k))
+    }
+
+  def chooser[A, B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    es => {
+      val b = run(es)(pa).get
+      run(es)(f(b))
+    }
+
+  def choiceViaChooser[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    chooser(cond)(if(_) t else f)
+
+  def choiceNViaChooser[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    chooser(n)(choices(_))
+
+  def join[A](ppa: Par[Par[A]]): Par[A] =
+    es => {
+      val pa = run(es)(ppa).get
+      run(es)(pa)
+    }
+
+  def joinViaChooser[A](ppa: Par[Par[A]]): Par[A] =
+    chooser(ppa)(pa => pa)
+
+  def chooserViaJoin[A, B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    join(map(pa)(f))
 }
