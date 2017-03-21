@@ -120,6 +120,9 @@ sealed trait Stream[+A] {
     case _ => None
   }
 
+  def zip[B](s2: Stream[B]): Stream[(A, B)] =
+    zipWith(s2)((a, b) => (a, b))
+
   def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] = Stream.unfold((this, s2)) {
     case (Cons(h1, t1), Cons(h2, t2)) => Some((Some(h1()), Some(h2())), (t1(), t2()))
     case (Cons(h1, t1), Empty) => Some(((Some(h1()), None), (t1(), Empty)))
@@ -145,6 +148,10 @@ sealed trait Stream[+A] {
       (b, Stream.cons(b, bsl._2))
     })._2
 
+  def find(f: A => Boolean): Option[A] = this match {
+    case Empty => None
+    case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
+  }
 }
 case object Empty extends Stream[Nothing]
 case class Cons[A](h: () => A, t: () => Stream[A]) extends Stream[A]
