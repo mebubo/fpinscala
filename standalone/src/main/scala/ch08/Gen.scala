@@ -13,7 +13,13 @@ trait Prop {
   def check: Either[(FailedCase, SuccessCount), SuccessCount]
 }
 
-case class Gen[A](sample: State[RNG, A])
+case class Gen[A](sample: State[RNG, A]) {
+  def flatMap[B](f: A => Gen[B]): Gen[B] =
+    Gen(sample.flatMap(x => f(x).sample))
+
+  def listOfN(size: Gen[Int]): Gen[List[A]] =
+    size.flatMap(n => Gen.listOfN(n, this))
+}
 
 object Gen {
   def choose(start: Int, stopExclusive: Int): Gen[Int] =
@@ -27,4 +33,5 @@ object Gen {
 
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))
+
 }
