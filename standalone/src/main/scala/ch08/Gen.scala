@@ -9,6 +9,7 @@ object Prop {
   type FailedCase = String
   type SuccessCount = Int
   type TestCases = Int
+  type MaxSize = Int
 
   sealed trait Result {
     def isFalsified: Boolean
@@ -22,25 +23,29 @@ object Prop {
     def isFalsified = true
   }
 
-  def forAll0[A](a: Gen[A])(p: A => Boolean): Prop = Prop((tcs, rng) => {
-    val (passed, rng2) = Gen.listOfN(tcs, a).map(l => l.map(p)).map(allTrue).sample.run(rng)
-    if (passed)
-      Passed
-    else
-      Falsified("foo", 0)
-  })
-
-  def allTrue(l: List[Boolean]): Boolean =
-    l.foldRight(true)((a, b) => a && b)
-
   def forAll[A](as: Gen[A])(p: A => Boolean): Prop = Prop {
-    (n, rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
+    (max, n, rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
       case (a, i) => try {
         if (p(a)) Passed else Falsified(a.toString, i)
       } catch {
         case e: Exception => Falsified(buildMsg(a, e), i)
       }
     }.find(_.isFalsified).getOrElse(Passed)
+  }
+
+  def forAll[A](as: SGen[A])(p: A => Boolean): Prop =
+    forAll(as.forSize(_))(p)
+
+  def forAll[A](g: Int => Gen[A])(p: A => Boolean): Prop = Prop {
+    (max, n, rng) =>
+      val casesPerSize = (n + (max - 1)) / max
+      val props: Stream[Prop] =
+        Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(p))
+      val prop: Prop =
+        props.map(p => Prop {
+          (max, _, rng) => p.run(max, casesPerSize, rng)
+        }).toList.reduce(_ && _)
+      prop.run(max, n, rng)
   }
 
   def randomStream[A](a: Gen[A])(rng: RNG): Stream[A] =
@@ -53,20 +58,20 @@ object Prop {
 
 }
 
-case class Prop(run: (TestCases, RNG) => Result) {
+case class Prop(run: (MaxSize, TestCases, RNG) => Result) {
   def &&(p: Prop): Prop = Prop {
-    (n, rng) => {
-      run(n, rng) match {
-        case Passed => p.run(n, rng)
+    (max, n, rng) => {
+      run(max, n, rng) match {
+        case Passed => p.run(max, n, rng)
         case x => x
       }
     }
   }
 
   def ||(p: Prop): Prop = Prop {
-    (n, rng) => {
-      run(n, rng) match {
-        case Falsified(_, m) => p.run(n, rng)
+    (max, n, rng) => {
+      run(max, n, rng) match {
+        case Falsified(_, m) => p.run(max, n, rng)
         case x => x
       }
     }
