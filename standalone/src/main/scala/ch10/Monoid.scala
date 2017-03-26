@@ -79,5 +79,28 @@ object Monoid {
 
   def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B =
     foldMap(as, dual(endoMonoid[B]))(a => b => f(b, a))(z)
+
+  def foldMapV[A, B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): B =
+    if (v.length == 0)
+      m.zero
+    else if (v.length == 1)
+      f(v(0))
+    else {
+      val (l, r) = v.splitAt(v.length / 2)
+      m.op(foldMapV(l, m)(f), foldMapV(r, m)(f))
+    }
+
+  import ch07.Par
+  import ch07.Par._
+
+  def par[A](m: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]] {
+    def zero = Par.unit(m.zero)
+    def op(a: Par[A], b: Par[A]): Par[A] = Par.map2(a, b)(m.op)
+  }
+
+  def parFoldMap[A, B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] =
+    Par.flatMap(Par.parMap(v.toList)(f)) { bs =>
+      foldMapV(bs.toIndexedSeq, par(m))(b => Par.lazyUnit(b))
+    }
 }
 
