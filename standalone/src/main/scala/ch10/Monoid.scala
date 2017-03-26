@@ -59,5 +59,25 @@ object Monoid {
     Prop.forAll(gen)((a: A) => m.op(a, m.zero) == a)
     Prop.forAll(gen)((a: A) => m.op(m.zero, a) == a)
   }
+
+  def concatenate[A](as: List[A], m: Monoid[A]): A =
+    as.foldLeft(m.zero)(m.op)
+
+  def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
+    concatenate(as.map(f), m)
+
+  def foldMap2[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
+    as.foldLeft(m.zero)((b, a) => m.op(b, f(a)))
+
+  def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B =
+    foldMap(as, endoMonoid[B])(a => b => f(a, b))(z)
+
+  def dual[A](m: Monoid[A]): Monoid[A] = new Monoid[A] {
+    def op(a1: A, a2: A): A = m.op(a2, a1)
+    def zero = m.zero
+  }
+
+  def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B =
+    foldMap(as, dual(endoMonoid[B]))(a => b => f(b, a))(z)
 }
 
