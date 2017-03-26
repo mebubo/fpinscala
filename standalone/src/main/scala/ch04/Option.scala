@@ -1,6 +1,7 @@
 package ch04
 
 sealed trait Option[+A] {
+  import Option._
   def map[B](f: A => B): Option[B] = this match {
     case None => None
     case Some(x) => Some(f(x))
@@ -14,10 +15,10 @@ sealed trait Option[+A] {
   def filter(f: A => Boolean): Option[A] = this.flatMap(x => if (f(x)) Some(x) else None)
 }
 
-case object None extends Option[Nothing]
-case class Some[A](get: A) extends Option[A]
+object Option {
+  case object None extends Option[Nothing]
+  case class Some[A](get: A) extends Option[A]
 
-object Main {
   def mean(xs: Seq[Double]): Option[Double] =
     if (xs.isEmpty) None
     else Some(xs.sum/xs.length)
@@ -36,8 +37,11 @@ object Main {
   def sequenceViaTraverse[A](as: List[Option[A]]): Option[List[A]] =
     traverse(as)(x => x)
 
+}
+
+object Main {
   def main(args: Array[String]) = {
-    println(mean(List(1,2,3,4)).toString)
-    println(variance(List(1,2,3,4)).toString)
+    println(Option.mean(List(1,2,3,4)).toString)
+    println(Option.variance(List(1,2,3,4)).toString)
   }
 }

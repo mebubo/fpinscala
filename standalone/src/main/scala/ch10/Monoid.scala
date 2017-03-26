@@ -102,5 +102,17 @@ object Monoid {
     Par.flatMap(Par.parMap(v.toList)(f)) { bs =>
       foldMapV(bs.toIndexedSeq, par(m))(b => Par.lazyUnit(b))
     }
+
+  import ch04.Option
+  import ch04.Option._
+
+  def ordered(v: IndexedSeq[Int]): Boolean = {
+    val orderedMonoid = new Monoid[Option[(Int, Int, Boolean)]] {
+      val zero = None
+      def op(a1: Option[(Int, Int, Boolean)], a2: Option[(Int, Int, Boolean)]): Option[(Int, Int, Boolean)] =
+        Option.map2(a1, a2) { case ((min1, max1, b1), (min2, max2, b2)) => (min1 min min2, max1 max max2, b1 && b2 && max1 <= min2) }
+    }
+    foldMapV(v, orderedMonoid)(x => Some(x, x, true)).map(_._3).getOrElse(false)
+  }
 }
 
