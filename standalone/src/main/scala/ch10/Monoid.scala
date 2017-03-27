@@ -142,8 +142,32 @@ object Monoid {
         case Stub(x) => unstub(x)
         case Part(l, w, r) => unstub(l) + w + unstub(r)
       }
-
   }
+
+  def productMonoid[A, B](m1: Monoid[A], m2: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    val zero = (m1.zero, m2.zero)
+    def op(a1: (A, B), a2: (A, B)): (A, B) =
+      (m1.op(a1._1, a2._1), m2.op(a1._2, a2._2))
+  }
+
+  def functionMonoid[A, B](m: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
+    val zero: A => B = a => m.zero
+    def op(a1: A => B, a2: A => B): A => B = a => {
+      m.op(a1(a), a2(a))
+    }
+  }
+
+  def mapMergeMonoid[K, V](V: Monoid[V]): Monoid[Map[K, V]] =
+    new Monoid[Map[K, V]] {
+      def zero = Map[K, V]()
+      def op(m1: Map[K, V], m2: Map[K, V]): Map[K, V] =
+        (m1.keySet ++ m2.keySet).foldLeft(zero) { (acc, k) =>
+          acc.updated(k, V.op(m1.getOrElse(k, V.zero), m2.getOrElse(k, V.zero)))
+        }
+    }
+
+  def bag[A](as: IndexedSeq[A]): Map[A, Int] =
+    foldMapV(as, mapMergeMonoid[A, Int](intAddition))(a => Map(a -> 1))
 
 }
 
