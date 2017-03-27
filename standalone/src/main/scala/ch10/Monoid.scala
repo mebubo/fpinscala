@@ -203,3 +203,18 @@ object TreeFoldable extends Foldable[Tree] {
     case Branch(l, r) => m.op(foldMap(l)(f)(m), foldMap(r)(f)(m))
   }
 }
+
+object OptionFoldable extends Foldable[Option] {
+  override def foldRight[A, B](a: Option[A])(z: B)(f: (A, B) => B): B = a match {
+    case None => z
+    case Some(x) => f(x, z)
+  }
+  override def foldLeft[A, B](a: Option[A])(z: B)(f: (B, A) => B): B = a match {
+    case None => z
+    case Some(x) => f(z, x)
+  }
+  override def foldMap[A, B](a: Option[A])(f: A => B)(m: Monoid[B]): B = a match {
+    case None => m.zero
+    case Some(x) => f(x)
+  }
+}
