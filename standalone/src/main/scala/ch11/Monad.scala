@@ -55,6 +55,9 @@ trait Monad[F[_]] extends Functor[F] {
 
   def flatMapViaCompose[A, B](fa: F[A])(f: A => F[B]): F[B] =
     compose((_: Unit) => fa, f)(())
+
+  def join[A](ffa: F[F[A]]): F[A] =
+    flatMap(ffa)(fa => fa)
 }
 
 import ch08.Gen
@@ -99,6 +102,16 @@ object Monad {
   //     p.flatMap(fa)(f)
   // }
 
+  val idMonad: Monad[Id] = new Monad[Id] {
+    def unit[A](a: A) = Id(a)
+    def flatMap[A, B](fa: Id[A])(f: A => Id[B]): Id[B] = fa.flatMap(f)
+  }
+
+}
+
+case class Id[A](value: A) {
+  def map[B](f: A => B): Id[B] = new Id(f(value))
+  def flatMap[B](f: A => Id[B]): Id[B] = f(value)
 }
 
 object Main {
