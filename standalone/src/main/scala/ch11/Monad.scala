@@ -49,6 +49,12 @@ trait Monad[F[_]] extends Functor[F] {
       val fb = f(a)
       map2(fb, fla)((b, la) => if (b) a :: la else la)
     })
+
+  def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
+    a => flatMap(f(a))(g)
+
+  def flatMapViaCompose[A, B](fa: F[A])(f: A => F[B]): F[B] =
+    compose((_: Unit) => fa, f)(())
 }
 
 import ch08.Gen
@@ -92,6 +98,7 @@ object Monad {
   //   def flatMap[A, B](fa: P[A])(f: A => P[B]): P[B] =
   //     p.flatMap(fa)(f)
   // }
+
 }
 
 object Main {
