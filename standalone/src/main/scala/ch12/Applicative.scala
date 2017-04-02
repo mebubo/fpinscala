@@ -3,11 +3,16 @@ package ch12
 import ch11.Functor
 
 trait Applicative[F[_]] extends Functor[F] {
-  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C]
   def unit[A](a: A): F[A]
 
+  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
+    apply(map(fa)(f.curried))(fb)
+
+  def apply[A, B](fab: F[A => B])(fa: F[A]): F[B] =
+    map2(fa, fab)((a, ab) => ab(a))
+
   def map[A, B](fa: F[A])(f: A => B): F[B] =
-    map2(fa, unit(()))((a, _) => f(a))
+    apply(unit(f))(fa)
 
   def traverse[A, B](as: List[A])(f: A => F[B]): F[List[B]] =
     as.foldRight(unit(List[B]()))((a, flb) => map2(f(a), flb)(_ :: _))
