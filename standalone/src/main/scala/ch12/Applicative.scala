@@ -39,6 +39,13 @@ trait Applicative[F[_]] extends Functor[F] {
       override def apply[A, B](fab: (F[A => B], G[A => B]))(fa: (F[A], G[A])): (F[B], G[B]) =
         (Applicative.this.apply(fab._1)(fa._1), G.apply(fab._2)(fa._2))
     }
+
+  def compose[G[_]](G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] =
+    new Applicative[({type f[x] = F[G[x]]})#f] {
+      def unit[A](a: A): F[G[A]] = Applicative.this.unit(G.unit(a))
+      override def map2[A, B, C](fga: F[G[A]], fgb: F[G[B]])(f: (A, B) => C): F[G[C]] =
+        Applicative.this.map2(fga, fgb)((ga, gb) => G.map2(ga, gb)(f))
+    }
 }
 
 sealed trait Validation[+E, +A]
