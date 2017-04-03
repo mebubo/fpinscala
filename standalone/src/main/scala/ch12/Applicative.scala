@@ -1,6 +1,7 @@
 package ch12
 
 import ch11.Functor
+import ch11.Monad
 
 trait Applicative[F[_]] extends Functor[F] {
   def unit[A](a: A): F[A]
@@ -38,6 +39,14 @@ trait Applicative[F[_]] extends Functor[F] {
       override def apply[A, B](fab: (F[A => B], G[A => B]))(fa: (F[A], G[A])): (F[B], G[B]) =
         (Applicative.this.apply(fab._1)(fa._1), G.apply(fab._2)(fa._2))
     }
+}
 
-
+object Monad2 {
+  def eitherMonad[E] = new Monad[({type f[x] = Either[E, x]})#f] {
+    def unit[A](a: A): Either[E, A] = Right(a)
+    override def flatMap[A, B](fa: Either[E, A])(f: A => Either[E, B]): Either[E, B] = fa match {
+      case Right(a) => f(a)
+      case Left(e) => Left(e)
+    }
+  }
 }
