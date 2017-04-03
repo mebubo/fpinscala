@@ -23,7 +23,7 @@ trait Applicative[F[_]] extends Functor[F] {
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
     sequence(List.fill(n)(fa))
 
-  def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] =
+  def factor[A, B](fa: F[A], fb: F[B]): F[(A, B)] =
     map2(fa, fb)((_, _))
 
   def map3[A, B, C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D): F[D] =
@@ -31,4 +31,13 @@ trait Applicative[F[_]] extends Functor[F] {
 
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
     apply(apply(apply(map(fa)(f.curried))(fb))(fc))(fd)
+
+  def product[G[_]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] =
+    new Applicative[({type f[x] = (F[x], G[x])})#f] {
+      def unit[A](a: A): (F[A], G[A]) = (Applicative.this.unit(a), G.unit(a))
+      override def apply[A, B](fab: (F[A => B], G[A => B]))(fa: (F[A], G[A])): (F[B], G[B]) =
+        (Applicative.this.apply(fab._1)(fa._1), G.apply(fab._2)(fa._2))
+    }
+
+
 }
