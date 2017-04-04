@@ -89,8 +89,9 @@ object Monad2 {
   }
 }
 
-trait Traverse[F[_]] {
-  def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] //= sequence(map(fa)(f))
+trait Traverse[F[_]] extends Functor[F] {
+  def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] =
+    sequence(map(fa)(f))
   def sequence[G[_]: Applicative, A](fga: F[G[A]]): G[F[A]] =
     traverse(fga)(x => x)
 
@@ -102,19 +103,19 @@ case class Tree[A](head: A, tail: List[Tree[A]])
 
 object Traverse {
   val listTraverse = new Traverse[List] {
-    def traverse[M[_], A, B](as: List[A])(f: A => M[B])(implicit M: Applicative[M]): M[List[B]] =
+    override def traverse[M[_], A, B](as: List[A])(f: A => M[B])(implicit M: Applicative[M]): M[List[B]] =
       as.foldRight(M.unit(List[B]()))((a, mlb) => M.map2(f(a), mlb)((b, lb) => b :: lb))
   }
 
   val optionTraverse = new Traverse[Option] {
-    def traverse[M[_], A, B](oa: Option[A])(f: A => M[B])(implicit M: Applicative[M]): M[Option[B]] = oa match {
+    override def traverse[M[_], A, B](oa: Option[A])(f: A => M[B])(implicit M: Applicative[M]): M[Option[B]] = oa match {
       case None => M.unit(None)
       case Some(a) => M.map(f(a))(b => Some(b))
     }
   }
 
   val treeTraverse = new Traverse[Tree] {
-    def traverse[M[_], A, B](ta: Tree[A])(f: A => M[B])(implicit M: Applicative[M]): M[Tree[B]] = ta match {
+    override def traverse[M[_], A, B](ta: Tree[A])(f: A => M[B])(implicit M: Applicative[M]): M[Tree[B]] = ta match {
       case Tree(a, lta) => {
         val tail: M[List[Tree[B]]] = listTraverse.traverse(lta)(ta2 => traverse(ta2)(f))
         val head: M[B] = f(a)
