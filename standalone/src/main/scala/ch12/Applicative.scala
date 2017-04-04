@@ -58,6 +58,8 @@ sealed trait Validation[+E, +A]
 case class Failure[E](head: E, tail: Vector[E] = Vector()) extends Validation[E, Nothing]
 case class Success[A](a: A) extends Validation[Nothing, A]
 
+case class Id[A](value: A)
+
 object Applicative {
   def validationApplicative[E] = new Applicative[({type f[x] = Validation[E, x]})#f] {
     def unit[A](a: A): Validation[E, A] = Success(a)
@@ -67,8 +69,14 @@ object Applicative {
       case (e@Failure(_, _), _) => e
       case (_, e@Failure(_, _)) => e
     }
-
   }
+
+  val idApplicative = new Applicative[Id] {
+    def unit[A](a: A): Id[A] = Id(a)
+    override def map2[A, B, C](fa: Id[A], fb: Id[B])(f: (A, B) => C): Id[C] =
+      Id(f(fa.value, fb.value))
+  }
+
 }
 
 object Monad2 {
@@ -85,6 +93,9 @@ trait Traverse[F[_]] {
   def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] //= sequence(map(fa)(f))
   def sequence[G[_]: Applicative, A](fga: F[G[A]]): G[F[A]] =
     traverse(fga)(x => x)
+
+  def map[A, B](fa: F[A])(f: A => B): F[B] =
+    traverse(fa)(a => Applicative.idApplicative.unit(f(a)))(Applicative.idApplicative).value
 }
 
 case class Tree[A](head: A, tail: List[Tree[A]])
